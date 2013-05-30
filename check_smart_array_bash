@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Nagios check for Smart Array (all models supported by hpacucli)
+EXIT_OK=0
+EXIT_WARNING=1
+EXIT_CRITICAL=2
+EXIT_UNKNOWN=3
+
+for controller in `hpacucli controller all show | grep -i slot | awk -FSlot '{ print $2 }'| awk '{ print $1}'`
+do
+ 
+   echo "Checking the controller : $controller"
+   check=`hpacucli ctrl  slot=$controller  show status `
+   
+   for word in `echo Battery/Capacitor Cache Controller`
+   do
+      mystring=`echo $check | grep $word`
+     
+      if [ "${#mystring}" -gt 0 ];then
+        echo "the $word exists... going to check.."  
+        output=`echo $check | grep "$word Status: OK"`
+	if [ "${#output}" -eq 0 ];then
+           echo "WARNING: the $word is not OK (Controller $controller)"
+           exit $EXIT_CRITICAL
+         fi 
+       fi
+      echo 
+  done
+done
+
+echo "OK"
+exit $EXIT_OK
